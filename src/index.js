@@ -1,22 +1,28 @@
 import express from "express";
+import { v4 as uuidv4 } from "uuid";
+import users from "./database";
 
 const app = express();
+const port = 3000;
+
+app.use(express.json());
 
 // Services
-const createUserService = (email, name, birthDate) => {
-  const userArealdyExists = users.find((user) => user.email === email);
+const createUserService = (product) => {
+  const userArealdyExists = users.find((user) => user.email === product.email);
 
   if (userArealdyExists) {
-    return "This email address is already being used";
+    return [409, { error: "This email address is already being used" }];
   }
 
   const newUser = {
-    email,
-    name,
-    birthDate,
+    ...product,
+    id: uuidv4(),
   };
 
   users.push(newUser);
+
+  return [201, newUser];
 };
 
 const listUsersService = () => {
@@ -25,11 +31,10 @@ const listUsersService = () => {
 
 // Controllers
 const createUserController = (request, response) => {
-  const { email, name, birthDate } = request.body;
+  console.log(request.body);
+  const [status, product] = createUserService(request.body);
 
-  const user = createUserService(email, name);
-
-  return response.send(user);
+  return response.status(status).json(product);
 };
 
 const listUsersController = (request, response) => {
@@ -52,12 +57,12 @@ const deleteUserController = (request, response) => {
   return response.json("Usuário excluido");
 };
 
-export default deleteUserController;
+app.post("/", (request, response) => createUserController(request, response));
+app.get("/", listUsersController);
+app.delete("/id", deleteUserController);
 
-express.post("", createUserController);
-express.get("", listUsersController);
-express.delete("/id", deleteUserController);
+app.listen(port, () => {
+  console.log(`App is running on http://localhost:${port}`);
+});
 
-app.listen(PORT, () =>
-  console.log(`App is running on http://localhost:${PORT}`)
-);
+export default app;
